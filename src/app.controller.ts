@@ -1,6 +1,6 @@
 import { Express } from "express";
-import { CheckDB } from "./db/connectionDB";
-import userRouter from "./modules/users/user.controller.js";
+import { CheckDB } from "@db/connectionDB";
+import userRouter from "@modules/users/user.controller";
 
 const bootstrap = (app: Express, express: any) => {
   app.use(express.json());

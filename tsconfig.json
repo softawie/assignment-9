@@ -10,12 +10,21 @@
       "ESNext.Iterator",
       "ESNext.Promise"
     ],
-    "module": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "node",
     "target": "es2024",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowJs": true
+    "allowJs": false,
+    "rootDir": ".", // Define the root directory for your source files
+    "baseUrl": ".", // Required for path aliases,
+    "paths": {
+      "@db/*": ["src/db/*"],
+      "@modules/*": ["src/modules/*"],
+      "@models/*": ["src/db/models/*"],
+      "@src/*": ["src/*"]
+    }
   },
   "include": ["src/**/*", "index.ts", "**/*.ts", "**/*.tsx", "src/**/*.ts"],
   "exclude": ["node_modules"]
