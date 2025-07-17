@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUser } from "./user.service.js";
+import { createUser } from "./user.service";
 const userRouter = Router();
 
 userRouter.post("/signup", createUser);
