@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import UserModel from "../../db/models/user.model";
+import { logger } from "@src/helpers/logger.helper";
 
-export const createUser = async (
+export const getUsers = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -13,6 +14,7 @@ export const createUser = async (
       data: user,
     });
   } catch (error) {
+    logger.log(error);
     next(error);
   }
 };

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { createUser } from "./user.service";
+import { getUsers } from "./user.service";
 const userRouter = Router();
 
-userRouter.post("/signup", createUser);
+userRouter.get("/getUsers", getUsers);
 
 export default userRouter;
