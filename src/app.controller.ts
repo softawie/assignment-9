@@ -8,6 +8,10 @@ const bootstrap = (app: Express, express: any) => {
   CheckDB();
   app.use("/", userRouter);
   app.use("/", authRouter);
+  // not found route
+  app.all("/*dummy", (req, res, next) => {
+    return res.status(404).json({ message: "Route not found" });
+  });
 };
 
 export { bootstrap };

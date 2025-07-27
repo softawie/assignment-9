@@ -1,8 +1,6 @@
 import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
-import { NextFunction } from "express";
-
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 const signup = async (
   req: Request,
