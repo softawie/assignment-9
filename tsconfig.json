@@ -23,6 +23,7 @@
       "@db/*": ["src/db/*"],
       "@modules/*": ["src/modules/*"],
       "@models/*": ["src/db/models/*"],
+      "@utils/*": ["src/utils/*"],
       "@src/*": ["src/*"]
     }
   },
