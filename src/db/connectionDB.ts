@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const dbName = "myDataBase";
+const dbName = process.env.DB_NAME;
 const url = `mongodb://127.0.0.1:27017/${dbName}`;
 
 const options = {

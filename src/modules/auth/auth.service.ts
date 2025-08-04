@@ -1,5 +1,6 @@
 import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
+import { SucRes } from "@utils/response.handler";
 import { Request, Response, NextFunction } from "express";
 
 const signup = async (
@@ -21,10 +22,16 @@ const signup = async (
     age,
     phone,
   });
-  res.status(201).json({
+  SucRes({
+    res,
+    statusCode: 201,
     message: "User added successfully.",
     data: user,
   });
+  // res.status(201).json({
+  //   message: "User added successfully.",
+  //   data: user,
+  // });
 };
 
 const login = async (
@@ -39,8 +46,12 @@ const login = async (
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
-  // Logic for user login
-  res.status(200).json({ message: "User logged in successfully" });
+  // res.status(200).json({ message: "User logged in successfully" });
+  SucRes({
+    res,
+    message: "User logged in successfully",
+    data: user,
+  });
 };
 
 export { signup, login };

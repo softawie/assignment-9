@@ -4,6 +4,7 @@ import userRouter from "@modules/users/user.controller";
 import authRouter from "@modules/auth/auth.controller";
 import dotenv from "dotenv";
 import { EnvEnum } from "@utils/enums";
+import { globalErrorHandler } from "@utils/globalError.handler";
 dotenv.config();
 
 declare global {
@@ -25,14 +26,7 @@ const bootstrap = (app: Express) => {
     return next(new Error("Route not found", { cause: 404 }));
   });
   // Global error handler
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    const statusCode = typeof err.cause === "number" ? err.cause : 500;
-    return res.status(statusCode).json({
-      message: "Internal Server Error",
-      error: err.message || "An unexpected error occurred",
-      stack: process.env.NODE_ENV === EnvEnum.DEVELOPER ? err.stack : undefined,
-    });
-  });
+  app.use(globalErrorHandler);
 };
 
 export { bootstrap };

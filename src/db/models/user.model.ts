@@ -6,6 +6,7 @@ export const rolesEnum = {
   USER: "user" as UserRole,
   ADMIN: "admin" as UserRole,
 };
+Object.freeze(rolesEnum);
 export interface IUser extends Document {
   name: string;
   email: string;
