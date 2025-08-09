@@ -1,7 +1,9 @@
 import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
+import { encrypt } from "@utils/encryptio.utils";
 import { hashing, compare } from "@utils/hash.utils";
 import { SucRes } from "@utils/response.handler";
+import { signToken } from "@utils/token.utils";
 import { Request, Response, NextFunction } from "express";
 
 const signup = async (
@@ -13,18 +15,18 @@ const signup = async (
   //check if user already exists
   const existingUser = await UserModel.findOne({ email });
   if (existingUser) {
-    // res.status(409).json({ message: "User already exists." });
     return next(new Error("User already exists", { cause: 409 }));
   }
   // Hash the password
   const hashedPassword = await hashing({ plainText: password });
   logger.log("Password hashed successfully");
+  const encryptedPhone = encrypt({ plainText: phone });
   const user = await UserModel.create({
     name,
     password: hashedPassword,
     email,
     age,
-    phone,
+    phone: encryptedPhone,
   });
   SucRes({
     res,
@@ -32,10 +34,6 @@ const signup = async (
     message: "User added successfully.",
     data: user,
   });
-  // res.status(201).json({
-  //   message: "User added successfully.",
-  //   data: user,
-  // });
 };
 
 const login = async (
@@ -57,11 +55,24 @@ const login = async (
   if (!isMatched) {
     return next(new Error("Invalid credentials", { cause: 401 }));
   }
-  // res.status(200).json({ message: "User logged in successfully" });
+  const accessToken = signToken({
+    payload: { _id: user._id },
+    signature: process.env.JWT_SECRET!,
+    options: { expiresIn: "1d", subject: "access" },
+  });
+  const refreshToken = signToken({
+    payload: { _id: user._id },
+    signature: process.env.JWT_SECRET!,
+    options: {
+      expiresIn: "7d",
+      issuer: process.env.JWT_ISSUER!,
+      subject: "refresh",
+    },
+  });
   SucRes({
     res,
     message: "User logged in successfully",
-    data: user,
+    data: { accessToken, refreshToken },
   });
 };
 
