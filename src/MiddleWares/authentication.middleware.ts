@@ -2,11 +2,14 @@ import UserModel from "@db/models/user.model";
 import { verifyToken } from "@utils/token.utils";
 import { Request, Response, NextFunction } from "express";
 
+import { Document } from "mongoose";
+import { IUser } from "@db/models/user.model";
+
 interface AuthenticatedRequest extends Request {
-  user?: string;
+  user?: (Document<unknown, {}, IUser> & IUser & { _id: unknown }) | undefined;
 }
 
-interface DecodedToken {
+export interface DecodedToken {
   _id: string;
   [key: string]: any;
 }

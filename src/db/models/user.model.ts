@@ -1,12 +1,7 @@
+import { providersEnum, UserRole } from "@utils/enums";
 import mongoose, { Schema, Document } from "mongoose";
 
-export type UserRole = "user" | "admin";
-
-export const rolesEnum = {
-  USER: "user" as UserRole,
-  ADMIN: "admin" as UserRole,
-};
-Object.freeze(rolesEnum);
+Object.freeze(UserRole);
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -14,6 +9,9 @@ export interface IUser extends Document {
   phone: string;
   age?: number;
   role: UserRole;
+  photo?: string;
+  provider: providersEnum;
+  confirmEmail?: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -36,11 +34,13 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        return this.provider === providersEnum.SYSTEM ? true : false;
+      },
       minlength: [6, "Password must be at least 6 characters long"],
       trim: true,
     },
-    phone: { type: String, required: true },
+    phone: { type: String, required: false },
     age: {
       type: Number,
       validate: {
@@ -52,10 +52,18 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: Schema.Types.String,
-      enum: Object.values(rolesEnum),
-      default: rolesEnum.USER,
+      enum: Object.values(UserRole),
+      default: UserRole.USER,
       required: true,
     },
+    confirmEmail:Date,
+    photo:String,
+    provider: {
+      type: String,
+      enum:{ values:Object.values(providersEnum),message:"{VALUE} is not supported"},
+      default: providersEnum.SYSTEM,
+    },
+
   },
   { timestamps: true }
 );

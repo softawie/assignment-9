@@ -5,6 +5,7 @@ import authRouter from "@modules/auth/auth.controller";
 import dotenv from "dotenv";
 import { EnvEnum } from "@utils/enums";
 import { globalErrorHandler } from "@utils/globalError.handler";
+import cors from "cors";
 dotenv.config();
 
 declare global {
@@ -17,6 +18,7 @@ declare global {
 
 const bootstrap = (app: Express) => {
   app.use(express.json());
+  app.use(cors())
   CheckDB();
   app.use("/", userRouter);
   app.use("/", authRouter);

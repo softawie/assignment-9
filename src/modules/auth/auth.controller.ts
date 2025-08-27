@@ -4,5 +4,6 @@ const authRouter = Router();
 
 authRouter.post("/signup", authService.signup);
 authRouter.post("/login", authService.login);
+authRouter.post("/social-login", authService.loginWithGmail);
 
 export default authRouter;
