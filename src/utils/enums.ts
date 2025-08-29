@@ -11,7 +11,12 @@ export enum providersEnum {
   SYSTEM = "system",
 }
 
-export enum UserRole {
+export enum UserRoles {
   ADMIN = "admin",
   USER = "user",
+}
+
+export enum TokenType {
+  ACCESS = 'access',
+  REFRESH = 'refresh'
 }

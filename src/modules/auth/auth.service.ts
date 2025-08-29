@@ -2,19 +2,19 @@ import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
 import { DecodedToken } from "@src/MiddleWares/authentication.middleware";
 import { encrypt } from "@utils/encryptio.utils";
-import { providersEnum } from "@utils/enums";
+import { providersEnum, TokenType } from "@utils/enums";
 import { hashing, compare } from "@utils/hash.utils";
 import { SucRes } from "@utils/response.handler";
 import { signToken } from "@utils/token.utils";
 import { Request, Response, NextFunction } from "express";
-import  {OAuth2Client}from 'google-auth-library';
+import { OAuth2Client } from "google-auth-library";
 
 const signup = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { name, password, email, age, phone } = req.body;
+  const { name, password, email, age, phone,role } = req.body;
   //check if user already exists
   const existingUser = await UserModel.findOne({ email });
   if (existingUser) {
@@ -30,6 +30,7 @@ const signup = async (
     email,
     age,
     phone: encryptedPhone,
+    role
   });
   SucRes({
     res,
@@ -60,17 +61,18 @@ const login = async (
   }
   const accessToken = signToken({
     payload: { _id: user._id },
-    signature: process.env.JWT_SECRET!,
     options: { expiresIn: "1d", subject: "access" },
+    user: { role: user.role },
   });
   const refreshToken = signToken({
     payload: { _id: user._id },
-    signature: process.env.JWT_SECRET!,
+    tokenType: TokenType.REFRESH,
     options: {
       expiresIn: "7d",
       issuer: process.env.JWT_ISSUER!,
       subject: "refresh",
     },
+    user: { role: user.role },
   });
   SucRes({
     res,
@@ -91,12 +93,13 @@ async function verifyGoogleAccount({ idToken }: { idToken: string }) {
 }
 
 interface User {
-    email: string|undefined;
-    email_verified: boolean|undefined;
-    given_name: string|undefined;
-    family_name: string|undefined;
-    picture: string|undefined;
-    provider: providersEnum;
+  email: string | undefined;
+  email_verified: boolean | undefined;
+  given_name: string | undefined;
+  family_name: string | undefined;
+  picture: string | undefined;
+  provider: providersEnum;
+  role: string;
 }
 
 const loginWithGmail = async (
@@ -104,7 +107,7 @@ const loginWithGmail = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { idToken }:DecodedToken = req.body;
+  const { idToken }: DecodedToken = req.body;
   const payload = await verifyGoogleAccount({ idToken });
   if (!payload) {
     return next(new Error("Invalid Google token", { cause: 401 }));
@@ -113,61 +116,62 @@ const loginWithGmail = async (
   if (!email_verified) {
     return next(new Error("Email not verified", { cause: 401 }));
   }
-  let user = await UserModel.findOne({ email }) as User | null;
+  let user = (await UserModel.findOne({ email })) as User | null;
   if (user) {
     if (user.provider === providersEnum.GOOGLE) {
       const accessToken = signToken({
-          payload: { _id: (user as any)._id },
-          signature: process.env.JWT_SECRET!,
-          options: { expiresIn: "1d", subject: "access" },
-        });
-        const refreshToken = signToken({
-          payload: { _id: (user as any)._id },
-          signature: process.env.JWT_SECRET!,
-          options: {
-            expiresIn: "7d",
-            issuer: process.env.JWT_ISSUER!,
-            subject: "refresh",
-          },
-        });
-        SucRes({
-          res,
-          message: "User logged in successfully",
-          data: { accessToken, refreshToken },
-        });    
-      }
+        payload: { _id: (user as any)._id },
+        options: { expiresIn: "1d", subject: "access" },
+        user: { role: user.role },
+      });
+      const refreshToken = signToken({
+        payload: { _id: (user as any)._id },
+        tokenType: TokenType.REFRESH,
+        options: {
+          expiresIn: "7d",
+          issuer: process.env.JWT_ISSUER!,
+          subject: "refresh",
+        },
+        user: { role: user.role },
+      });
+      SucRes({
+        res,
+        message: "User logged in successfully",
+        data: { accessToken, refreshToken },
+      });
+    }
   } else {
     // Create a new user if not exists
-    user = await UserModel.create({
+    user = (await UserModel.create({
       name: `${given_name} ${family_name}`,
       email,
       provider: providersEnum.GOOGLE,
       photo: picture,
-      confirmEmail: Date.now()
-    }) as unknown as User;
+      confirmEmail: Date.now(),
+    })) as unknown as User;
     logger.log("New user created via Google OAuth");
-          const accessToken = signToken({
-          payload: { _id: (user as any)._id },
-          signature: process.env.JWT_SECRET!,
-          options: { expiresIn: "1d", subject: "access" },
-        });
-        const refreshToken = signToken({
-          payload: { _id: (user as any)._id },
-          signature: process.env.JWT_SECRET!,
-          options: {
-            expiresIn: "7d",
-            issuer: process.env.JWT_ISSUER!,
-            subject: "refresh",
-          },
-        });
-        SucRes({
-          res,
-          statusCode: 201,
-          message: "User created successfully",
-          data: { accessToken, refreshToken },
-        });  
+    const accessToken = signToken({
+      payload: { _id: (user as any)._id },
+      options: { expiresIn: "1d", subject: "access" },
+      user: { role: user.role },
+    });
+    const refreshToken = signToken({
+      payload: { _id: (user as any)._id },
+      tokenType: TokenType.REFRESH,
+      options: {
+        expiresIn: "7d",
+        issuer: process.env.JWT_ISSUER!,
+        subject: "refresh",
+      },
+      user: { role: user.role },
+    });
+    SucRes({
+      res,
+      statusCode: 201,
+      message: "User created successfully",
+      data: { accessToken, refreshToken },
+    });
   }
-
 };
 
-export { signup, login,loginWithGmail };
+export { signup, login, loginWithGmail };

@@ -1,14 +1,14 @@
-import { providersEnum, UserRole } from "@utils/enums";
+import { providersEnum, UserRoles } from "@utils/enums";
 import mongoose, { Schema, Document } from "mongoose";
 
-Object.freeze(UserRole);
+Object.freeze(UserRoles);
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
   phone: string;
   age?: number;
-  role: UserRole;
+  role: UserRoles;
   photo?: string;
   provider: providersEnum;
   confirmEmail?: boolean;
@@ -52,8 +52,8 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: Schema.Types.String,
-      enum: Object.values(UserRole),
-      default: UserRole.USER,
+      enum: { values:Object.values(UserRoles),message:"Role is not supported"},
+      default: UserRoles.USER,
       required: true,
     },
     confirmEmail:Date,

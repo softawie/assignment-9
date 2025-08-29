@@ -1,24 +1,60 @@
 import jwt from "jsonwebtoken";
 import type { SignOptions } from "jsonwebtoken";
+import { TokenType, UserRoles } from "./enums";
 
 export const signToken = ({
   payload = {},
-  signature = process.env.JWT_SECRET!,
-  options = { expiresIn: "1h" } as SignOptions,
+  options = { expiresIn: "1h", subject: "access" } as SignOptions,
+  user,
+  tokenType = TokenType.ACCESS,
 }: {
   payload?: string | object | Buffer;
-  signature?: jwt.Secret;
   options?: SignOptions;
+  user?: { role?: string };
+  tokenType?: TokenType;
 }) => {
-  return jwt.sign(payload, signature, options);
+  // Set default options if not provided
+  const signOptions: SignOptions = {
+    expiresIn: tokenType === TokenType.ACCESS ? "1d" : "7d",
+    subject: tokenType === TokenType.ACCESS ? "access" : "refresh",
+    issuer: process.env.JWT_ISSUER!,
+    ...options
+  };
+  // Determine token signature based on both user role and token type
+  const tokenSignature = user?.role === UserRoles.ADMIN
+    ? (tokenType === TokenType.ACCESS 
+        ? process.env.ACCESS_ADMIN_JWT_SECRET!
+        : process.env.REFRESH_ADMIN_JWT_SECRET!)
+    : (tokenType === TokenType.ACCESS
+        ? process.env.ACCESS_USER_JWT_SECRET!
+        : process.env.REFRESH_USER_JWT_SECRET!);
+
+  return jwt.sign(payload, tokenSignature, signOptions);
 };
+
+export interface VerifyTokenOptions {
+  token: string;
+  user?: { role?: string };
+  tokenType?: TokenType;
+  bearer?: string;
+}
 
 export const verifyToken = ({
   token = "",
-  signature = process.env.JWT_SECRET!,
-}: {
-  token: string;
-  signature?: jwt.Secret;
-}) => {
-  return jwt.verify(token, signature);
+  user,
+  tokenType = TokenType.ACCESS,
+  bearer
+}: VerifyTokenOptions) => {
+  // Check if this is an admin token based on the bearer or user role
+  const isAdmin = bearer === "admin" || user?.role === UserRoles.ADMIN;
+  // Determine token signature based on both user role and token type
+  const tokenSignature = isAdmin
+    ? (tokenType === TokenType.ACCESS 
+        ? process.env.ACCESS_ADMIN_JWT_SECRET!
+        : process.env.REFRESH_ADMIN_JWT_SECRET!)
+    : (tokenType === TokenType.ACCESS
+        ? process.env.ACCESS_USER_JWT_SECRET!
+        : process.env.REFRESH_USER_JWT_SECRET!);
+
+  return jwt.verify(token, tokenSignature);
 };
