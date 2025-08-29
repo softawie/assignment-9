@@ -174,4 +174,25 @@ const loginWithGmail = async (
   }
 };
 
+export const refreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const user = req.user;
+  const accessToken = signToken({
+    payload: { _id: (user as any)._id },
+    user: { role: user.role },
+  });
+  const refreshToken = signToken({
+    payload: { _id: (user as any)._id },
+    tokenType: TokenType.REFRESH,
+    user: { role: user.role },
+  });
+  SucRes({
+    res,
+    message: "New Credentials Generated successfully",
+    data: { accessToken, refreshToken },
+  });
+}
 export { signup, login, loginWithGmail };
