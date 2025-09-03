@@ -20,3 +20,10 @@ export enum TokenType {
   ACCESS = 'access',
   REFRESH = 'refresh'
 }
+
+export enum EmailSubjects {
+  CONFIRM_EMAIL = 'Confirm Email',
+  RESET_PASSWORD = 'Reset Password',
+  WELCOME = 'Welcome to Saraha App',
+}
+  

@@ -12,6 +12,7 @@ export interface IUser extends Document {
   photo?: string;
   provider: providersEnum;
   confirmEmail?: boolean;
+  confirmEmailOtp?: string;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -57,6 +58,7 @@ const UserSchema = new Schema<IUser>(
       required: true,
     },
     confirmEmail:Date,
+    confirmEmailOtp:String,
     photo:String,
     provider: {
       type: String,

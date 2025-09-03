@@ -2,19 +2,21 @@ import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
 import { DecodedToken } from "@src/MiddleWares/authentication.middleware";
 import { encrypt } from "@utils/encryptio.utils";
-import { providersEnum, TokenType } from "@utils/enums";
+import { EmailSubjects, providersEnum, TokenType } from "@utils/enums";
+import { emailEvent } from "@utils/event.utils";
 import { hashing, compare } from "@utils/hash.utils";
 import { SucRes } from "@utils/response.handler";
 import { signToken } from "@utils/token.utils";
 import { Request, Response, NextFunction } from "express";
 import { OAuth2Client } from "google-auth-library";
+import { customAlphabet } from "nanoid";
 
 const signup = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { name, password, email, age, phone,role } = req.body;
+  const { name, password, email, age, phone, role } = req.body;
   //check if user already exists
   const existingUser = await UserModel.findOne({ email });
   if (existingUser) {
@@ -24,13 +26,24 @@ const signup = async (
   const hashedPassword = await hashing({ plainText: password });
   logger.log("Password hashed successfully");
   const encryptedPhone = encrypt({ plainText: phone });
+  // otp hashing
+  const code = customAlphabet("1234567890", 6)();
+  const hashedOtp = await hashing({ plainText: code });
+   
+  emailEvent.emit("confirmEmail", {
+    to: email,
+    code,
+    firstName: name,
+    subject: EmailSubjects.CONFIRM_EMAIL,
+  });
   const user = await UserModel.create({
     name,
     password: hashedPassword,
     email,
     age,
     phone: encryptedPhone,
-    role
+    role,
+    confirmEmailOtp: hashedOtp,
   });
   SucRes({
     res,
@@ -51,6 +64,9 @@ const login = async (
   const user = await UserModel.findOne({ email });
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
+  }
+  if (!user.confirmEmail) {
+    return next(new Error("User not found or Email not confirmed", { cause: 401 }));
   }
   const isMatched = await compare({
     plainText: password,
@@ -194,5 +210,35 @@ export const refreshToken = async (
     message: "New Credentials Generated successfully",
     data: { accessToken, refreshToken },
   });
-}
+};
+
+export const confirmEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { email, otp } = req.body;
+  // to filter also with confirmEmail
+  const user = await UserModel.findOne({
+    email,
+    confirmEmailOtp: { $exists: true },
+    confirmEmail: { $exists: false },
+  });
+  if (!user) {
+    return next(
+      new Error("User not found or Email already confirmed", { cause: 401 })
+    );
+  }
+  if (!(await compare({ plainText: otp, hash: user.confirmEmailOtp }))) {
+    return next(new Error("Invalid code", { cause: 401 }));
+  }
+  await UserModel.updateOne(
+    { email },
+    { $set: { confirmEmail: Date.now(), confirmEmailOtp: undefined } ,$inc :{__v:1}}
+  );
+  SucRes({
+    res,
+    message: "Email confirmed successfully",
+  });
+};
 export { signup, login, loginWithGmail };
