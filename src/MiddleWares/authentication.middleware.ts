@@ -3,7 +3,7 @@ import { verifyToken } from "@utils/token.utils";
 import { Request, Response, NextFunction } from "express";
 import { Document } from "mongoose";
 import { IUser } from "@db/models/user.model";
-import { TokenType } from "@utils/enums";
+import { TokenType, UserRoles } from "@utils/enums";
 
 interface AuthenticatedRequest extends Request {
   user?: (Document<unknown, {}, IUser> & IUser & { _id: unknown }) | undefined;
@@ -46,3 +46,12 @@ export const authenticationMiddleware = async (
   req.user = user;
   next();
 };
+
+export const authorizationMiddleware = ({accessRoles=[]}: {accessRoles: UserRoles[]}) => {
+    return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+        if (!accessRoles.includes(req.user?.role as UserRoles)) {
+            return next(new Error("Unauthorized", { cause: 403 }));
+        }
+        next();
+    }
+}

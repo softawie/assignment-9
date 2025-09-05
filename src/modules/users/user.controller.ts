@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { getSingleUser, getUsers } from "./user.service";
-import { authenticationMiddleware } from "@src/MiddleWares/authentication.middleware";
+import { authenticationMiddleware, authorizationMiddleware } from "@src/MiddleWares/authentication.middleware";
+import { endPoints } from "./user.authorization";
 const userRouter = Router();
 
 userRouter.get("/getUsers", getUsers);
-userRouter.get("/getSingleUser", authenticationMiddleware, getSingleUser);
+userRouter.get("/getSingleUser", authenticationMiddleware, authorizationMiddleware({accessRoles:endPoints.getSingleUser}),getSingleUser);
+
+
 export default userRouter;
