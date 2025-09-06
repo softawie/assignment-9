@@ -19,7 +19,7 @@ userRouter.patch(
   "/update-profile-image",
   authenticationMiddleware,
   authorizationMiddleware({ accessRoles: endPoints.updateProfileImage }),
-  localFileUpload().single("profileImage"),
+  localFileUpload({customPath:'User'}).single("profileImage"),
   updateProfileImage
 );
 
