@@ -45,3 +45,16 @@ export const getSingleUser = async (
     data: { user: req.user },
   });
 };
+
+export const updateProfileImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  return SucRes({
+    res,
+    statusCode: 200,
+    message: "Profile Image updated successfully",
+    data: { file: req.file },
+  });
+};

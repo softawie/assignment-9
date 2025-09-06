@@ -1,5 +1,6 @@
 import { UserRoles } from "@utils/enums";
 
 export const endPoints = {
-    getSingleUser: [UserRoles.ADMIN, UserRoles.USER]
+    getSingleUser: [UserRoles.ADMIN, UserRoles.USER],
+    updateProfileImage: [UserRoles.ADMIN, UserRoles.USER]
 };
