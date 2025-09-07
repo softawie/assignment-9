@@ -2,15 +2,15 @@ import express, { Express} from "express";
 import { CheckDB } from "@db/connectionDB";
 import userRouter from "@modules/users/user.controller";
 import authRouter from "@modules/auth/auth.controller";
-
 import { globalErrorHandler } from "@utils/globalError.handler";
 import cors from "cors";
 
 
-const bootstrap = (app: Express) => {
+const bootstrap = async (app: Express) => {
   app.use(express.json());
   app.use(cors())
-  CheckDB();
+  await CheckDB();
+  app.use("/uploads", express.static("./src/uploads"));
   app.use("/", userRouter);
   app.use("/", authRouter);
   // not found route

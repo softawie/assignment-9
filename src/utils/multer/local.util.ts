@@ -292,8 +292,10 @@ export const localFileUpload = ({
             }
             cb(null, fullPath);
         },
-        filename: (req, file, cb) => {
-            cb(null, Date.now() + '-' + Math.random() + '-' + file.originalname);
+        filename: (req, file: Express.Multer.File, cb) => {
+            const uniqueFileName = `${Date.now()}-${Math.random()}-${file.originalname}`;
+             file.finalPath = `${basePath}/${uniqueFileName}`;
+            cb(null, uniqueFileName);
         }
     });
 
@@ -431,8 +433,11 @@ export const secureFileUpload = ({
                 if (!fs.existsSync(fullDir)) fs.mkdirSync(fullDir, { recursive: true });
                 const ext = path.extname(file.originalname) || '';
                 const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+             
                 const filename = `${file.fieldname}-${unique}${ext}`;
                 const fullPath = path.join(fullDir, filename);
+                console.log("fullPath",fullPath );
+                (file as any).finalPath = `${basePath}/${filename}`;
                 fs.writeFileSync(fullPath, file.buffer);
 
                 // reflect disk fields like multer diskStorage

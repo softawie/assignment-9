@@ -51,10 +51,25 @@ export const updateProfileImage = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  return SucRes({
-    res,
-    statusCode: 200,
-    message: "Profile Image updated successfully",
-    data: { file: req.file },
-  });
+  try {
+    if (!req.file?.path) {
+      return next(new Error("No image file provided", { cause: 400 }));
+    }
+    const user = await UserModel.findByIdAndUpdate(
+      req.user._id,
+      { profileImage: req.file.finalPath },
+      { new: true, runValidators: true }
+    );
+    if (!user) {
+      return next(new Error("User not found", { cause: 404 }));
+    }
+    return SucRes({
+      res,
+      statusCode: 200,
+      message: "Profile image updated successfully",
+      data: { user },
+    });
+  } catch (error) {
+    next(error);
+  }
 };

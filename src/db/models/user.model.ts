@@ -9,7 +9,7 @@ export interface IUser extends Document {
   phone: string;
   age?: number;
   role: UserRoles;
-  photo?: string;
+  profileImage?: string;
   provider: providersEnum;
   confirmEmail?: boolean;
   confirmEmailOtp?: string;
@@ -59,7 +59,7 @@ const UserSchema = new Schema<IUser>(
     },
     confirmEmail:Date,
     confirmEmailOtp:String,
-    photo:String,
+    profileImage:String,
     provider: {
       type: String,
       enum:{ values:Object.values(providersEnum),message:"{VALUE} is not supported"},
