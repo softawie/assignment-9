@@ -5,7 +5,7 @@ import {
   authorizationMiddleware,
 } from "@src/MiddleWares/authentication.middleware";
 import { endPoints } from "./user.authorization";
-import { localFileUpload } from "@utils/multer/local.util";
+import { fileValidation, localFileUpload, secureFileUpload } from "@utils/multer/local.util";
 const userRouter = Router();
 
 userRouter.get("/getUsers", getUsers);
@@ -19,7 +19,13 @@ userRouter.patch(
   "/update-profile-image",
   authenticationMiddleware,
   authorizationMiddleware({ accessRoles: endPoints.updateProfileImage }),
-  localFileUpload({customPath:'User'}).single("profileImage"),
+  secureFileUpload({
+    customPath: 'User',
+    validation: {
+      allowedMimeTypes: fileValidation.allowedMimeTypes,
+      maxSize: fileValidation.maxSize
+    }
+  }).single("profileImage"),
   updateProfileImage
 );
 

@@ -16,6 +16,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "removeComments": true,
     "allowJs": false,
     "rootDir": ".", // Define the root directory for your source files
     "baseUrl": ".", // Required for path aliases,
