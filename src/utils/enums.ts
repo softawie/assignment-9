@@ -27,3 +27,9 @@ export enum EmailSubjects {
   WELCOME = 'Welcome to Saraha App',
 }
   
+export enum ValidationLocation {
+  Body = "body",
+  Query = "query",
+  Params = "params",
+  Headers = "headers",
+}

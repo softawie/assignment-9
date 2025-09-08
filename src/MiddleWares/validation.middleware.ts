@@ -1,11 +1,10 @@
+import { ValidationLocation } from "@utils/enums";
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import Joi, { ObjectSchema } from "joi";
-
-export type ValidationLocation = "body" | "query" | "params" | "headers";
+import  { ObjectSchema } from "joi";
 
 export const validate = (
   schema: ObjectSchema,
-  location: ValidationLocation = "body"
+  location: ValidationLocation = ValidationLocation.Body
 ): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction) => {
     const { error, value } = schema.validate(req[location], {
