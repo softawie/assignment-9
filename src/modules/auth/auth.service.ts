@@ -34,7 +34,7 @@ const signup = async (
   emailEvent.emit("confirmEmail", {
     to: email,
     code,
-    name: name,
+    name,
     subject: EmailSubjects.CONFIRM_EMAIL,
   });
   const user = await UserModel.create({

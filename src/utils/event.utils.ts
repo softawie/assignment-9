@@ -6,11 +6,11 @@ import { template } from "sendEmailTemplate";
 export const emailEvent = new EventEmitter();
 
 emailEvent.on("confirmEmail",async(data)=>{
-  const {to,code,firstName,subject} = data;
+  const {to,code,name,subject} = data;
     await sendEmail({
         to,
         subject,
-        html:template(code,firstName,subject),
+        html:template(code,name,subject),
         text: `Please confirm your email by clicking on the link: http://localhost:3000/confirm-email/${to}`,
         cc:"yahia.zakaria.sherif@gmail.com",
         bcc:"yahia.zakaria.sherif@gmail.com",
