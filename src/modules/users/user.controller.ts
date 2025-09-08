@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getSingleUser, getUsers, updateProfileImage } from "./user.service";
+import { coverImages, getSingleUser, getUsers, updateProfileImage } from "./user.service";
 import {
   authenticationMiddleware,
   authorizationMiddleware,
@@ -27,6 +27,20 @@ userRouter.patch(
     }
   }).single("profileImage"),
   updateProfileImage
+);
+
+userRouter.patch(
+  "/cover-images",
+  authenticationMiddleware,
+  authorizationMiddleware({ accessRoles: endPoints.updateProfileImage }),
+  secureFileUpload({
+    customPath: 'User',
+    validation: {
+      allowedMimeTypes: fileValidation.allowedMimeTypes,
+      maxSize: fileValidation.maxSize
+    }
+  }).array("coverImages",5),
+  coverImages
 );
 
 export default userRouter;

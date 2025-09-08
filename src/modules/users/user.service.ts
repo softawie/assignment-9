@@ -4,14 +4,7 @@ import { logger } from "@src/helpers/logger.helper";
 import { SucRes } from "@utils/response.handler";
 import { decrypt } from "@utils/encryptio.utils";
 
-// Extend Express Request interface to include 'user'
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any;
-    }
-  }
-}
+// Types are globally augmented in src/types/multer-augmentations.d.ts
 
 export const getUsers = async (
   req: Request,
@@ -73,3 +66,34 @@ export const updateProfileImage = async (
     next(error);
   }
 };
+
+export const coverImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+    // Normalize req.files to an array regardless of multer mode
+    const filesArray: Express.Multer.File[] | undefined = Array.isArray(req.files)
+      ? req.files
+      : req.files
+      ? Object.values(req.files).flat()
+      : undefined;
+
+    if (!filesArray?.length) {
+      return next(new Error("No image file provided", { cause: 400 }));
+    }
+    const user = await UserModel.findByIdAndUpdate(
+      req.user._id,
+      { coverImages: filesArray.map((file) => file.finalPath) },
+      { new: true, runValidators: true }
+    );
+    if (!user) {
+      return next(new Error("User not found", { cause: 404 }));
+    }
+    return SucRes({
+      res,
+      statusCode: 200,
+      message: "Cover images updated successfully",
+      data: { file: filesArray },
+    });
+}

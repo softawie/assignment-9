@@ -10,6 +10,7 @@ export interface IUser extends Document {
   age?: number;
   role: UserRoles;
   profileImage?: string;
+  coverImages:[String],
   provider: providersEnum;
   confirmEmail?: boolean;
   confirmEmailOtp?: string;
@@ -60,6 +61,7 @@ const UserSchema = new Schema<IUser>(
     confirmEmail:Date,
     confirmEmailOtp:String,
     profileImage:String,
+    coverImages:[String],
     provider: {
       type: String,
       enum:{ values:Object.values(providersEnum),message:"{VALUE} is not supported"},
