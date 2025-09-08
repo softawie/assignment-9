@@ -3,7 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 
 Object.freeze(UserRoles);
 export interface IUser extends Document {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   phone: string;
@@ -18,13 +19,19 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
   {
-    name: {
+    firstName: {
       type: String,
       required: true,
       minlength: [3, "Name must be at least 3 characters long"],
       maxlength: [50, "the {VALUE} must be at most 50 characters long"],
       trim: true,
-      lowercase: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      minlength: [3, "Name must be at least 3 characters long"],
+      maxlength: [50, "the {VALUE} must be at most 50 characters long"],
+      trim: true,
     },
     email: {
       type: String,

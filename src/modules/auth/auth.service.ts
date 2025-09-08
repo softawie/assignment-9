@@ -16,7 +16,8 @@ const signup = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { name, password, email, age, phone, role } = req.body;
+  const { firstName, lastName, password, email, age, phone, role } = req.body;
+  const name = `${firstName} ${lastName}`;
   //check if user already exists
   const existingUser = await UserModel.findOne({ email });
   if (existingUser) {
@@ -33,11 +34,12 @@ const signup = async (
   emailEvent.emit("confirmEmail", {
     to: email,
     code,
-    firstName: name,
+    name: name,
     subject: EmailSubjects.CONFIRM_EMAIL,
   });
   const user = await UserModel.create({
-    name,
+    firstName,
+    lastName,
     password: hashedPassword,
     email,
     age,
