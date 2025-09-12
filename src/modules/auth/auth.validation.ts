@@ -12,7 +12,6 @@ const signUpValidation = joi
     role: generalValidations.role,
   })
 
-
 const loginValidation = joi
   .object({
     email: generalValidations.email.required(),
@@ -20,4 +19,17 @@ const loginValidation = joi
   })
   .required();
 
-export { signUpValidation, loginValidation };
+const updatePasswordValidation = joi
+  .object({
+    oldPassword: generalValidations.password.required(),
+    password: generalValidations.password
+      .not(joi.ref("oldPassword"))
+      .messages({
+        "any.invalid": "New password must be different from old password",
+        "any.required": "password is required",
+      })
+      .required(),
+    confirmPassword: generalValidations.confirmPassword,
+  });
+
+export { signUpValidation, loginValidation, updatePasswordValidation };

@@ -1,6 +1,6 @@
 import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
-import { DecodedToken } from "@src/MiddleWares/authentication.middleware";
+import { DecodedToken } from "@src/MiddleWares/auth.middleware";
 import { encrypt } from "@utils/encryptio.utils";
 import { EmailSubjects, providersEnum, TokenType } from "@utils/enums";
 import { emailEvent } from "@utils/event.utils";

@@ -3,6 +3,7 @@ import UserModel from "../../db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
 import { SucRes } from "@utils/response.handler";
 import { decrypt } from "@utils/encryptio.utils";
+import { compare, hashing } from "@utils/hash.utils";
 
 // Types are globally augmented in src/types/multer-augmentations.d.ts
 
@@ -72,28 +73,55 @@ export const coverImages = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-    // Normalize req.files to an array regardless of multer mode
-    const filesArray: Express.Multer.File[] | undefined = Array.isArray(req.files)
-      ? req.files
-      : req.files
-      ? Object.values(req.files).flat()
-      : undefined;
+  // Normalize req.files to an array regardless of multer mode
+  const filesArray: Express.Multer.File[] | undefined = Array.isArray(req.files)
+    ? req.files
+    : req.files
+    ? Object.values(req.files).flat()
+    : undefined;
 
-    if (!filesArray?.length) {
-      return next(new Error("No image file provided", { cause: 400 }));
-    }
-    const user = await UserModel.findByIdAndUpdate(
-      req.user._id,
-      { coverImages: filesArray.map((file) => file.finalPath) },
-      { new: true, runValidators: true }
-    );
-    if (!user) {
-      return next(new Error("User not found", { cause: 404 }));
-    }
-    return SucRes({
-      res,
-      statusCode: 200,
-      message: "Cover images updated successfully",
-      data: { file: filesArray },
-    });
-}
+  if (!filesArray?.length) {
+    return next(new Error("No image file provided", { cause: 400 }));
+  }
+  const user = await UserModel.findByIdAndUpdate(
+    req.user._id,
+    { coverImages: filesArray.map((file) => file.finalPath) },
+    { new: true, runValidators: true }
+  );
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+  return SucRes({
+    res,
+    statusCode: 200,
+    message: "Cover images updated successfully",
+    data: { file: filesArray },
+  });
+};
+
+export const updatePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { oldPassword, confirmPassword } = req.body;
+  const isMatched = await compare({
+    plainText: oldPassword,
+    hash: req.user.password,
+  });
+  if (!isMatched) {
+    return next(new Error("Invalid old password", { cause: 400 }));
+  }
+  const hashedPassword = await hashing({ plainText: confirmPassword });
+  const user = await UserModel.findByIdAndUpdate(req.user._id, {
+    password: hashedPassword,
+  });
+
+  return user
+    ? SucRes({
+        res,
+        statusCode: 200,
+        message: "Password updated successfully",
+      })
+    : next(new Error("Invalid Access", { cause: 401 }));
+};

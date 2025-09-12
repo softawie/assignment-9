@@ -1,8 +1,9 @@
 import express from "express";
 import { bootstrap } from "src/app.controller";
-import dotenv from "dotenv";
+import {config} from "dotenv";
 import { EnvEnum } from "@utils/enums";
-dotenv.config();
+import path from "node:path";
+config({path: path.resolve('../.env')});
 
 declare global {
   namespace NodeJS {
@@ -13,7 +14,7 @@ declare global {
 }
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 bootstrap(app);
 
 app.get("/", (req, res) => res.send("Hello World!"));

@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { coverImages, getSingleUser, getUsers, updateProfileImage } from "./user.service";
+import { coverImages, getSingleUser, getUsers, updateProfileImage ,updatePassword} from "./user.service";
 import {
   authenticationMiddleware,
   authorizationMiddleware,
-} from "@src/MiddleWares/authentication.middleware";
+} from "@src/MiddleWares/auth.middleware";
 import { endPoints } from "./user.authorization";
 import { fileValidation, localFileUpload, secureFileUpload } from "@utils/multer/local.util";
+import { validate } from "@src/MiddleWares/validation.middleware";
+import { signUpValidation, updatePasswordValidation } from "@modules/auth/auth.validation";
 const userRouter = Router();
 
 userRouter.get("/getUsers", getUsers);
@@ -41,6 +43,14 @@ userRouter.patch(
     }
   }).array("coverImages",5),
   coverImages
+);
+
+userRouter.patch(
+  "/update-password",
+  validate(updatePasswordValidation),
+  authenticationMiddleware,
+  authorizationMiddleware({ accessRoles: endPoints.updatePassword }),
+  updatePassword
 );
 
 export default userRouter;
