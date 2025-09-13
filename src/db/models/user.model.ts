@@ -15,6 +15,10 @@ export interface IUser extends Document {
   provider: providersEnum;
   confirmEmail?: boolean;
   confirmEmailOtp?: string;
+  freezeAt?:Date;
+  freezeBy?:object,
+  unfreezeAt?:Date,
+  unfreezeBy?:object,
 }
 
 const UserSchema = new Schema<IUser>(
@@ -69,6 +73,16 @@ const UserSchema = new Schema<IUser>(
     confirmEmailOtp:String,
     profileImage:String,
     coverImages:[String],
+    freezeAt:Date,
+    freezeBy:{
+      type:Schema.Types.ObjectId,
+      ref:"User"
+    },
+    unfreezeAt:Date,
+    unfreezeBy:{
+      type:Schema.Types.ObjectId,
+      ref:"User"
+    },
     provider: {
       type: String,
       enum:{ values:Object.values(providersEnum),message:"{VALUE} is not supported"},

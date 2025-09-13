@@ -19,6 +19,9 @@ export const generalValidations = {
         confirmPassword: joi.valid(joi.ref("password")).messages({
           "any.only": "confirmPassword must match password",
         }),
+        userId: joi.string().messages({
+          "any.required": "userId is required",
+        }),
         age: joi.number().messages({
           "any.required": "age is required",
         }),

@@ -4,6 +4,7 @@ import { logger } from "@src/helpers/logger.helper";
 import { SucRes } from "@utils/response.handler";
 import { decrypt } from "@utils/encryptio.utils";
 import { compare, hashing } from "@utils/hash.utils";
+import { UserRoles } from "@utils/enums";
 
 // Types are globally augmented in src/types/multer-augmentations.d.ts
 
@@ -122,6 +123,32 @@ export const updatePassword = async (
         res,
         statusCode: 200,
         message: "Password updated successfully",
+      })
+    : next(new Error("Invalid Access", { cause: 401 }));
+};
+
+export const freezeAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { userId } = req.params;
+  const user = await UserModel.findById(userId);
+  if (userId && req.user.role !== UserRoles.ADMIN) {
+    return next(new Error("Invalid Access", { cause: 403 }));
+  }
+  const updatedUser = await UserModel.findByIdAndUpdate(
+    userId || req.user._id,
+    { freezeAt: { $exists: false } },
+   // { freezeAt: Date.now(),freezeBy:userId || req.user._id,unfreezeAt:undefined,unfreezeBy:undefined }
+   { freezeAt: Date.now(),freezeBy:userId || req.user._id,$unset:{unfreezeAt:true,unfreezeBy:true} } //other way
+
+  );
+  return updatedUser
+    ? SucRes({
+        res,
+        statusCode: 200,
+        message: "Account frozen successfully",
       })
     : next(new Error("Invalid Access", { cause: 401 }));
 };
