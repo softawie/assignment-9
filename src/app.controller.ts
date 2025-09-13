@@ -1,23 +1,23 @@
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express} from "express";
 import { CheckDB } from "@db/connectionDB";
 import userRouter from "@modules/users/user.controller";
 import authRouter from "@modules/auth/auth.controller";
-import dotenv from "dotenv";
-import { EnvEnum } from "@utils/enums";
 import { globalErrorHandler } from "@utils/globalError.handler";
-dotenv.config();
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      NODE_ENV?: EnvEnum;
-    }
-  }
-}
+const limitRequest = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {message:"Too many requests from this IP, please try again after 15 minutes", cause: 429},
+});
 
-const bootstrap = (app: Express) => {
-  app.use(express.json());
-  CheckDB();
+
+const bootstrap = async (app: Express) => {
+  app.use(cors(),express.json(),helmet(),limitRequest)
+  await CheckDB();
+  app.use("/uploads", express.static("./src/uploads"));
   app.use("/", userRouter);
   app.use("/", authRouter);
   // not found route

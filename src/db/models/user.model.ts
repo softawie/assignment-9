@@ -1,30 +1,41 @@
+import { providersEnum, UserRoles } from "@utils/enums";
 import mongoose, { Schema, Document } from "mongoose";
 
-export type UserRole = "user" | "admin";
-
-export const rolesEnum = {
-  USER: "user" as UserRole,
-  ADMIN: "admin" as UserRole,
-};
-Object.freeze(rolesEnum);
+Object.freeze(UserRoles);
 export interface IUser extends Document {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   phone: string;
   age?: number;
-  role: UserRole;
+  role: UserRoles;
+  profileImage?: string;
+  coverImages:[String],
+  provider: providersEnum;
+  confirmEmail?: boolean;
+  confirmEmailOtp?: string;
+  freezeAt?:Date;
+  freezeBy?:object,
+  unfreezeAt?:Date,
+  unfreezeBy?:object,
 }
 
 const UserSchema = new Schema<IUser>(
   {
-    name: {
+    firstName: {
       type: String,
       required: true,
       minlength: [3, "Name must be at least 3 characters long"],
       maxlength: [50, "the {VALUE} must be at most 50 characters long"],
       trim: true,
-      lowercase: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      minlength: [3, "Name must be at least 3 characters long"],
+      maxlength: [50, "the {VALUE} must be at most 50 characters long"],
+      trim: true,
     },
     email: {
       type: String,
@@ -36,11 +47,13 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        return this.provider === providersEnum.SYSTEM ? true : false;
+      },
       minlength: [6, "Password must be at least 6 characters long"],
       trim: true,
     },
-    phone: { type: String, required: true },
+    phone: { type: String, required: false },
     age: {
       type: Number,
       validate: {
@@ -52,10 +65,30 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: Schema.Types.String,
-      enum: Object.values(rolesEnum),
-      default: rolesEnum.USER,
+      enum: { values:Object.values(UserRoles),message:"Role is not supported"},
+      default: UserRoles.USER,
       required: true,
     },
+    confirmEmail:Date,
+    confirmEmailOtp:String,
+    profileImage:String,
+    coverImages:[String],
+    freezeAt:Date,
+    freezeBy:{
+      type:Schema.Types.ObjectId,
+      ref:"User"
+    },
+    unfreezeAt:Date,
+    unfreezeBy:{
+      type:Schema.Types.ObjectId,
+      ref:"User"
+    },
+    provider: {
+      type: String,
+      enum:{ values:Object.values(providersEnum),message:"{VALUE} is not supported"},
+      default: providersEnum.SYSTEM,
+    },
+
   },
   { timestamps: true }
 );
