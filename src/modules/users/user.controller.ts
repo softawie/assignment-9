@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { coverImages, getSingleUser, getUsers, updateProfileImage ,updatePassword, freezeAccount, unfreezeAccount} from "./user.service";
+import { coverImages, getSingleUser, getUsers, updateProfileImage ,updatePassword, freezeAccount, unfreezeAccount, deleteAccount} from "./user.service";
 import {
   authenticationMiddleware,
   authorizationMiddleware,

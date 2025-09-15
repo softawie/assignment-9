@@ -185,11 +185,19 @@ export const deleteAccount = async (
 ): Promise<void> => {
   const { userId } = req.params;
 
-  const user = await UserModel.findByIdAndDelete(
-    userId || req.user._id,
-    { freezeAt: { $exists: false } },
-);
-  return user.deletedCount
+  // Only admins can delete another user's account
+  if (userId && req.user.role !== UserRoles.ADMIN) {
+    return next(new Error("Invalid Access", { cause: 403 }));
+  }
+
+  // Use deleteOne to get a DeleteResult that contains deletedCount
+  const result = await UserModel.deleteOne({
+    _id: userId || req.user._id,
+    // Only allow deletion if the account is not frozen
+    freezeAt: { $exists: false },
+  });
+
+  return result.deletedCount && result.deletedCount > 0
     ? SucRes({
         res,
         statusCode: 200,
