@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { coverImages, getSingleUser, getUsers, updateProfileImage ,updatePassword, freezeAccount} from "./user.service";
+import { coverImages, getSingleUser, getUsers, updateProfileImage ,updatePassword, freezeAccount, unfreezeAccount} from "./user.service";
 import {
   authenticationMiddleware,
   authorizationMiddleware,
@@ -7,7 +7,7 @@ import {
 import { endPoints } from "./user.authorization";
 import { fileValidation, localFileUpload, secureFileUpload } from "@utils/multer/local.util";
 import { validate } from "@src/MiddleWares/validation.middleware";
-import { freezeAccountValidation, signUpValidation, updatePasswordValidation } from "@modules/auth/auth.validation";
+import { deleteAccountValidation, freezeAccountValidation, signUpValidation, unfreezeAccountValidation, updatePasswordValidation } from "@modules/auth/auth.validation";
 const userRouter = Router();
 
 userRouter.get("/getUsers", getUsers);
@@ -61,6 +61,20 @@ userRouter.delete(
   freezeAccount
 );
 
+userRouter.patch(
+  "/unfreeze-account/:userId",
+  validate(unfreezeAccountValidation),
+  authenticationMiddleware,
+  authorizationMiddleware({ accessRoles: endPoints.unfreezeAccount }),
+  unfreezeAccount
+);
 
+userRouter.delete(
+  "/delete-account/:userId",
+  validate(deleteAccountValidation),
+  authenticationMiddleware,
+  authorizationMiddleware({ accessRoles: endPoints.deleteAccount }),
+  deleteAccount
+);
 
 export default userRouter;

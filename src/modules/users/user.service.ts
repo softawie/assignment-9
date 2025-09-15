@@ -152,3 +152,48 @@ export const freezeAccount = async (
       })
     : next(new Error("Invalid Access", { cause: 401 }));
 };
+
+export const unfreezeAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { userId } = req.params;
+  const user = await UserModel.findById(userId);
+  if (userId && req.user.role !== UserRoles.ADMIN) {
+    return next(new Error("Invalid Access", { cause: 403 }));
+  }
+  const updatedUser = await UserModel.findByIdAndUpdate(
+    userId ,
+    { unfreezeAt: { $exists: true } ,unfreezeBy:{$ne:userId} },
+    { unfreezeAt: Date.now(),unfreezeBy: req.user._id,$unset:{freezeAt:true,freezeBy:true} } //other way
+
+  );
+  return updatedUser
+    ? SucRes({
+        res,
+        statusCode: 200,
+        message: "Account unfrozen successfully",
+      })
+    : next(new Error("Invalid Access", { cause: 401 }));
+};
+
+export const deleteAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { userId } = req.params;
+
+  const user = await UserModel.findByIdAndDelete(
+    userId || req.user._id,
+    { freezeAt: { $exists: false } },
+);
+  return user.deletedCount
+    ? SucRes({
+        res,
+        statusCode: 200,
+        message: "Account deleted successfully",
+      })
+    : next(new Error("Invalid Access", { cause: 401 }));
+};

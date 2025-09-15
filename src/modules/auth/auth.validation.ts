@@ -34,6 +34,15 @@ const updatePasswordValidation = joi
 
   const freezeAccountValidation = joi
     .object({
+      userId: generalValidations.userId,
+    })
+    const unfreezeAccountValidation = joi
+    .object({
       userId: generalValidations.userId.required(),
     })
-export { signUpValidation, loginValidation, updatePasswordValidation ,freezeAccountValidation};
+
+    const deleteAccountValidation = joi
+    .object({
+      userId: generalValidations.userId.required(),
+    })
+export { signUpValidation, loginValidation, updatePasswordValidation ,freezeAccountValidation,unfreezeAccountValidation,deleteAccountValidation};

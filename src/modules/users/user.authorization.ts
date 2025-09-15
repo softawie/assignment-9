@@ -5,4 +5,6 @@ export const endPoints = {
     updateProfileImage: [UserRoles.ADMIN, UserRoles.USER],
     updatePassword: [UserRoles.ADMIN, UserRoles.USER],
     freezeAccount: [UserRoles.ADMIN, UserRoles.USER],
+    unfreezeAccount:  [UserRoles.ADMIN],
+    deleteAccount: [UserRoles.ADMIN],
 };
