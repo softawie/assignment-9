@@ -18,7 +18,7 @@ const loginValidation = joi
   })
   .required();
 
-const resetPasswordValidation = joi.object({
+const forgetPasswordValidation = joi.object({
   email: generalValidations.email.required(),
 });
 
@@ -51,5 +51,5 @@ export {
   freezeAccountValidation,
   unfreezeAccountValidation,
   deleteAccountValidation,
-  resetPasswordValidation,
+  forgetPasswordValidation,
 };

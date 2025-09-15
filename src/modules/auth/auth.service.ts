@@ -250,7 +250,7 @@ export const confirmEmail = async (
   });
 };
 
-const resetPassword = async (
+const forgetPassword = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -260,7 +260,7 @@ const resetPassword = async (
   const hashedOtp = await hashing({ plainText: code });
   const user = await UserModel.findOneAndUpdate(
     { email, provider: providersEnum.SYSTEM, confirmEmail: { $exists: true } },
-    { $set: { resetPasswordOtp: hashedOtp } }
+    { $set: { forgetPasswordOtp: hashedOtp } }
   );
   if (!user) {
     return next(
@@ -270,7 +270,7 @@ const resetPassword = async (
   const name = `${user.firstName} ${user.lastName}`;
 
   emailEvent.emit("email", {
-    type: EmailEventEnums.RESET_PASSWORD,
+    type: EmailEventEnums.FORGET_PASSWORD,
     to: email,
     code,
     name,
@@ -282,4 +282,4 @@ const resetPassword = async (
   });
 };
 
-export { signup, login, loginWithGmail, resetPassword };
+export { signup, login, loginWithGmail, forgetPassword };

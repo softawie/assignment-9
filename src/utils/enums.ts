@@ -36,5 +36,5 @@ export enum ValidationLocation {
 
 export enum EmailEventEnums{
   CONFIRM_EMAIL = 'confirmEmail',
-  RESET_PASSWORD = 'resetPassword',
+  FORGET_PASSWORD = 'forgetPassword',
 }
