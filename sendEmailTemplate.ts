@@ -1,4 +1,4 @@
-export const template = (code: number, firstName: string, subject: string) => `<!DOCTYPE html>
+export const template = (code: string, firstName: string, subject: string) => `<!DOCTYPE html>
 <html>
 <head>
   <style>

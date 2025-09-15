@@ -19,6 +19,7 @@ export interface IUser extends Document {
   freezeBy?:object,
   unfreezeAt?:Date,
   unfreezeBy?:object,
+  resetPasswordOtp?:string,
 }
 
 const UserSchema = new Schema<IUser>(
@@ -83,6 +84,7 @@ const UserSchema = new Schema<IUser>(
       type:Schema.Types.ObjectId,
       ref:"User"
     },
+    resetPasswordOtp:String,
     provider: {
       type: String,
       enum:{ values:Object.values(providersEnum),message:"{VALUE} is not supported"},
