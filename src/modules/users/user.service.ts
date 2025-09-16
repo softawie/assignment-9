@@ -113,10 +113,28 @@ export const updatePassword = async (
   if (!isMatched) {
     return next(new Error("Invalid old password", { cause: 400 }));
   }
+  // Prevent reusing current or any previous passwords
+  const sameAsCurrent = await compare({ plainText: confirmPassword, hash: req.user.password });
+  if (sameAsCurrent) {
+    return next(new Error("New password cannot be the same as the current password", { cause: 400 }));
+  }
+  if (Array.isArray(req.user.passwordHistory)) {
+    for (const oldHash of req.user.passwordHistory) {
+      if (await compare({ plainText: confirmPassword, hash: oldHash })) {
+        return next(new Error("New password cannot match any of your recent passwords", { cause: 400 }));
+      }
+    }
+  }
+
   const hashedPassword = await hashing({ plainText: confirmPassword });
-  const user = await UserModel.findByIdAndUpdate(req.user._id, {
-    password: hashedPassword,
-  });
+  const newHistory = [req.user.password, ...((req.user.passwordHistory as string[]) || [])].slice(0, 5);
+  const user = await UserModel.findByIdAndUpdate(
+    req.user._id,
+    {
+      password: hashedPassword,
+      passwordHistory: newHistory,
+    }
+  );
 
   return user
     ? SucRes({
@@ -149,6 +167,59 @@ export const freezeAccount = async (
         res,
         statusCode: 200,
         message: "Account frozen successfully",
+      })
+    : next(new Error("Invalid Access", { cause: 401 }));
+};
+
+export const unfreezeAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { userId } = req.params;
+  const user = await UserModel.findById(userId);
+  if (userId && req.user.role !== UserRoles.ADMIN) {
+    return next(new Error("Invalid Access", { cause: 403 }));
+  }
+  const updatedUser = await UserModel.findByIdAndUpdate(
+    userId ,
+    { unfreezeAt: { $exists: true } ,unfreezeBy:{$ne:userId} },
+    { unfreezeAt: Date.now(),unfreezeBy: req.user._id,$unset:{freezeAt:true,freezeBy:true} } //other way
+
+  );
+  return updatedUser
+    ? SucRes({
+        res,
+        statusCode: 200,
+        message: "Account unfrozen successfully",
+      })
+    : next(new Error("Invalid Access", { cause: 401 }));
+};
+
+export const deleteAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { userId } = req.params;
+
+  // Only admins can delete another user's account
+  if (userId && req.user.role !== UserRoles.ADMIN) {
+    return next(new Error("Invalid Access", { cause: 403 }));
+  }
+
+  // Use deleteOne to get a DeleteResult that contains deletedCount
+  const result = await UserModel.deleteOne({
+    _id: userId || req.user._id,
+    // Only allow deletion if the account is not frozen
+    freezeAt: { $exists: false },
+  });
+
+  return result.deletedCount && result.deletedCount > 0
+    ? SucRes({
+        res,
+        statusCode: 200,
+        message: "Account deleted successfully",
       })
     : next(new Error("Invalid Access", { cause: 401 }));
 };

@@ -28,6 +28,9 @@ export const generalValidations = {
         phone: joi.string().messages({
           "any.required": "phone must be a string",
         }),
+        code: joi.string().messages({
+          "any.required": "code is required",
+        }),
         role: joi
           .string()
           .valid(...Object.values(UserRoles).filter((v) => typeof v === "string"))

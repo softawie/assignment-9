@@ -26,10 +26,15 @@ export enum EmailSubjects {
   RESET_PASSWORD = 'Reset Password',
   WELCOME = 'Welcome to Saraha App',
 }
-  
+
 export enum ValidationLocation {
   Body = "body",
   Query = "query",
   Params = "params",
   Headers = "headers",
+}
+
+export enum EmailEventEnums{
+  CONFIRM_EMAIL = 'confirmEmail',
+  FORGET_PASSWORD = 'forgetPassword',
 }

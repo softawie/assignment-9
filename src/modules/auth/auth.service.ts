@@ -2,7 +2,7 @@ import UserModel from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
 import { DecodedToken } from "@src/MiddleWares/auth.middleware";
 import { encrypt } from "@utils/encryptio.utils";
-import { EmailSubjects, providersEnum, TokenType } from "@utils/enums";
+import { EmailEventEnums, EmailSubjects, providersEnum, TokenType } from "@utils/enums";
 import { emailEvent } from "@utils/event.utils";
 import { hashing, compare } from "@utils/hash.utils";
 import { SucRes } from "@utils/response.handler";
@@ -30,8 +30,9 @@ const signup = async (
   // otp hashing
   const code = customAlphabet("1234567890", 6)();
   const hashedOtp = await hashing({ plainText: code });
-   
-  emailEvent.emit("confirmEmail", {
+
+  emailEvent.emit("email", {
+    type: EmailEventEnums.CONFIRM_EMAIL,
     to: email,
     code,
     name,
@@ -41,6 +42,7 @@ const signup = async (
     firstName,
     lastName,
     password: hashedPassword,
+    passwordHistory: [hashedPassword],
     email,
     age,
     phone: encryptedPhone,
@@ -68,7 +70,9 @@ const login = async (
     return next(new Error("User not found", { cause: 404 }));
   }
   if (!user.confirmEmail) {
-    return next(new Error("User not found or Email not confirmed", { cause: 401 }));
+    return next(
+      new Error("User not found or Email not confirmed", { cause: 401 })
+    );
   }
   const isMatched = await compare({
     plainText: password,
@@ -236,11 +240,97 @@ export const confirmEmail = async (
   }
   await UserModel.updateOne(
     { email },
-    { $set: { confirmEmail: Date.now(), confirmEmailOtp: undefined } ,$inc :{__v:1}}
+    {
+      $set: { confirmEmail: Date.now(), confirmEmailOtp: undefined },
+      $inc: { __v: 1 },
+    }
   );
   SucRes({
     res,
     message: "Email confirmed successfully",
   });
 };
-export { signup, login, loginWithGmail };
+
+const forgetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { email } = req.body;
+  const code = customAlphabet("1234567890", 6)();
+  const hashedOtp = await hashing({ plainText: code });
+  const user = await UserModel.findOneAndUpdate(
+    { email, provider: providersEnum.SYSTEM, confirmEmail: { $exists: true } },
+    { $set: { forgetPasswordOtp: hashedOtp } }
+  );
+  if (!user) {
+    return next(
+      new Error("User not found or Email not confirmed", { cause: 401 })
+    );
+  }
+  const name = `${user.firstName} ${user.lastName}`;
+
+  emailEvent.emit("email", {
+    type: EmailEventEnums.FORGET_PASSWORD,
+    to: email,
+    code,
+    name,
+    subject: EmailSubjects.RESET_PASSWORD,
+  });
+  return SucRes({
+    res,
+    message: "Check your email for reset password OTP",
+  });
+};
+
+const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { email, code, password } = req.body;
+  const user = await UserModel.findOne({
+    email,
+    forgetPasswordOtp: { $exists: true },
+    freezeAt: { $exists: false },
+    confirmEmail: { $exists: true },
+    provider: providersEnum.SYSTEM,
+  });
+  if (!user) {
+    return next(new Error("User not found or Email not confirmed", { cause: 401 }));
+  }
+  if (!(await compare({ plainText: code, hash: user.forgetPasswordOtp }))) {
+    return next(new Error("Invalid code", { cause: 401 }));
+  }
+
+  // Enforce password history: reject if matches current or any previous
+  const matchesCurrent = await compare({ plainText: password, hash: user.password });
+  if (matchesCurrent) {
+    return next(new Error("New password cannot be the same as the current password", { cause: 400 }));
+  }
+  if (Array.isArray(user.passwordHistory)) {
+    for (const oldHash of user.passwordHistory) {
+      if (await compare({ plainText: password, hash: oldHash })) {
+        return next(new Error("New password cannot match any of your recent passwords", { cause: 400 }));
+      }
+    }
+  }
+
+  const hashedPassword = await hashing({ plainText: password });
+  // Build new password history (cap to last 5)
+  const newHistory = [user.password, ...(user.passwordHistory || [])].slice(0, 5);
+
+  await UserModel.updateOne(
+    { email },
+    {
+      $set: { password: hashedPassword, forgetPasswordOtp: undefined, passwordHistory: newHistory },
+      $inc: { __v: 1 },
+    }
+  );
+  SucRes({
+    res,
+    message: "Password reset successfully",
+  });
+};
+
+export { signup, login, loginWithGmail, forgetPassword , resetPassword };
