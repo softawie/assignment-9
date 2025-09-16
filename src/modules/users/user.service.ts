@@ -113,10 +113,28 @@ export const updatePassword = async (
   if (!isMatched) {
     return next(new Error("Invalid old password", { cause: 400 }));
   }
+  // Prevent reusing current or any previous passwords
+  const sameAsCurrent = await compare({ plainText: confirmPassword, hash: req.user.password });
+  if (sameAsCurrent) {
+    return next(new Error("New password cannot be the same as the current password", { cause: 400 }));
+  }
+  if (Array.isArray(req.user.passwordHistory)) {
+    for (const oldHash of req.user.passwordHistory) {
+      if (await compare({ plainText: confirmPassword, hash: oldHash })) {
+        return next(new Error("New password cannot match any of your recent passwords", { cause: 400 }));
+      }
+    }
+  }
+
   const hashedPassword = await hashing({ plainText: confirmPassword });
-  const user = await UserModel.findByIdAndUpdate(req.user._id, {
-    password: hashedPassword,
-  });
+  const newHistory = [req.user.password, ...((req.user.passwordHistory as string[]) || [])].slice(0, 5);
+  const user = await UserModel.findByIdAndUpdate(
+    req.user._id,
+    {
+      password: hashedPassword,
+      passwordHistory: newHistory,
+    }
+  );
 
   return user
     ? SucRes({

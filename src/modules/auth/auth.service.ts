@@ -42,6 +42,7 @@ const signup = async (
     firstName,
     lastName,
     password: hashedPassword,
+    passwordHistory: [hashedPassword],
     email,
     age,
     phone: encryptedPhone,
@@ -302,11 +303,27 @@ const resetPassword = async (
     return next(new Error("Invalid code", { cause: 401 }));
   }
 
+  // Enforce password history: reject if matches current or any previous
+  const matchesCurrent = await compare({ plainText: password, hash: user.password });
+  if (matchesCurrent) {
+    return next(new Error("New password cannot be the same as the current password", { cause: 400 }));
+  }
+  if (Array.isArray(user.passwordHistory)) {
+    for (const oldHash of user.passwordHistory) {
+      if (await compare({ plainText: password, hash: oldHash })) {
+        return next(new Error("New password cannot match any of your recent passwords", { cause: 400 }));
+      }
+    }
+  }
+
   const hashedPassword = await hashing({ plainText: password });
+  // Build new password history (cap to last 5)
+  const newHistory = [user.password, ...(user.passwordHistory || [])].slice(0, 5);
+
   await UserModel.updateOne(
     { email },
     {
-      $set: { password: hashedPassword, forgetPasswordOtp: undefined },
+      $set: { password: hashedPassword, forgetPasswordOtp: undefined, passwordHistory: newHistory },
       $inc: { __v: 1 },
     }
   );

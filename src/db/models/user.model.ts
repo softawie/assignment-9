@@ -7,6 +7,7 @@ export interface IUser extends Document {
   lastName: string;
   email: string;
   password: string;
+  passwordHistory?: string[];
   phone: string;
   age?: number;
   role: UserRoles;
@@ -53,6 +54,10 @@ const UserSchema = new Schema<IUser>(
       },
       minlength: [6, "Password must be at least 6 characters long"],
       trim: true,
+    },
+    passwordHistory: {
+      type: [String],
+      default: [],
     },
     phone: { type: String, required: false },
     age: {
