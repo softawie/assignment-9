@@ -282,4 +282,38 @@ const forgetPassword = async (
   });
 };
 
-export { signup, login, loginWithGmail, forgetPassword };
+const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { email, code, password } = req.body;
+  const user = await UserModel.findOne({
+    email,
+    forgetPasswordOtp: { $exists: true },
+    freezeAt: { $exists: false },
+    confirmEmail: { $exists: true },
+    provider: providersEnum.SYSTEM,
+  });
+  if (!user) {
+    return next(new Error("User not found or Email not confirmed", { cause: 401 }));
+  }
+  if (!(await compare({ plainText: code, hash: user.forgetPasswordOtp }))) {
+    return next(new Error("Invalid code", { cause: 401 }));
+  }
+
+  const hashedPassword = await hashing({ plainText: password });
+  await UserModel.updateOne(
+    { email },
+    {
+      $set: { password: hashedPassword, forgetPasswordOtp: undefined },
+      $inc: { __v: 1 },
+    }
+  );
+  SucRes({
+    res,
+    message: "Password reset successfully",
+  });
+};
+
+export { signup, login, loginWithGmail, forgetPassword , resetPassword };

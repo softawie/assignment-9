@@ -22,6 +22,13 @@ const forgetPasswordValidation = joi.object({
   email: generalValidations.email.required(),
 });
 
+const resetPasswordValidation = joi.object({
+  email: generalValidations.email.required(),
+  code: generalValidations.code.required(),
+  password: generalValidations.password.required(),
+  confirmPassword: generalValidations.confirmPassword,
+});
+
 const updatePasswordValidation = joi.object({
   oldPassword: generalValidations.password.required(),
   password: generalValidations.password
@@ -52,4 +59,5 @@ export {
   unfreezeAccountValidation,
   deleteAccountValidation,
   forgetPasswordValidation,
+  resetPasswordValidation,
 };
