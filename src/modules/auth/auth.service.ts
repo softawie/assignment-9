@@ -1,12 +1,18 @@
-import UserModel from "@db/models/user.model";
+import TokenModel from "@db/models/token.model";
+import UserModel, { IUser } from "@db/models/user.model";
 import { logger } from "@src/helpers/logger.helper";
 import { DecodedToken } from "@src/MiddleWares/auth.middleware";
 import { encrypt } from "@utils/encryptio.utils";
-import { EmailEventEnums, EmailSubjects, providersEnum, TokenType } from "@utils/enums";
+import {
+  EmailEventEnums,
+  EmailSubjects,
+  providersEnum,
+  TokenType,
+} from "@utils/enums";
 import { emailEvent } from "@utils/event.utils";
 import { hashing, compare } from "@utils/hash.utils";
 import { SucRes } from "@utils/response.handler";
-import { signToken } from "@utils/token.utils";
+import { generateToken } from "@utils/token.utils";
 import { Request, Response, NextFunction } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { customAlphabet } from "nanoid";
@@ -81,25 +87,37 @@ const login = async (
   if (!isMatched) {
     return next(new Error("Invalid credentials", { cause: 401 }));
   }
-  const accessToken = signToken({
-    payload: { _id: user._id },
-    options: { expiresIn: "1d", subject: "access" },
-    user: { role: user.role },
-  });
-  const refreshToken = signToken({
-    payload: { _id: user._id },
-    tokenType: TokenType.REFRESH,
-    options: {
-      expiresIn: "7d",
-      issuer: process.env.JWT_ISSUER!,
-      subject: "refresh",
-    },
-    user: { role: user.role },
-  });
+  const { accessToken, refreshToken } = generateToken({ user: user as IUser });
   SucRes({
     res,
     message: "User logged in successfully",
     data: { accessToken, refreshToken },
+  });
+};
+
+const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const user = req.user as IUser;
+  const decoded = req.decoded as DecodedToken | undefined;
+  if (!user || !decoded) {
+    return next(new Error("Unauthorized", { cause: 401 }));
+  }
+  // JWT `exp` is in seconds since epoch. Convert to ms and compute remaining time.
+  const expSeconds = decoded.exp as number | undefined;
+  const expiresIn = expSeconds ? Math.max(0, expSeconds * 1000 - Date.now()) : 0;
+
+  await TokenModel.create({
+    userId: user._id,
+    jti: decoded.jti,
+    expiresIn,
+  });
+  SucRes({
+    res,
+    statusCode: 201,
+    message: "User logged out successfully",
   });
 };
 
@@ -138,23 +156,11 @@ const loginWithGmail = async (
   if (!email_verified) {
     return next(new Error("Email not verified", { cause: 401 }));
   }
-  let user = (await UserModel.findOne({ email })) as User | null;
+  let user = (await UserModel.findOne({ email })) as IUser | User;
   if (user) {
     if (user.provider === providersEnum.GOOGLE) {
-      const accessToken = signToken({
-        payload: { _id: (user as any)._id },
-        options: { expiresIn: "1d", subject: "access" },
-        user: { role: user.role },
-      });
-      const refreshToken = signToken({
-        payload: { _id: (user as any)._id },
-        tokenType: TokenType.REFRESH,
-        options: {
-          expiresIn: "7d",
-          issuer: process.env.JWT_ISSUER!,
-          subject: "refresh",
-        },
-        user: { role: user.role },
+      const { accessToken, refreshToken } = generateToken({
+        user: user as IUser,
       });
       SucRes({
         res,
@@ -170,22 +176,10 @@ const loginWithGmail = async (
       provider: providersEnum.GOOGLE,
       photo: picture,
       confirmEmail: Date.now(),
-    })) as unknown as User;
+    })) as IUser;
     logger.log("New user created via Google OAuth");
-    const accessToken = signToken({
-      payload: { _id: (user as any)._id },
-      options: { expiresIn: "1d", subject: "access" },
-      user: { role: user.role },
-    });
-    const refreshToken = signToken({
-      payload: { _id: (user as any)._id },
-      tokenType: TokenType.REFRESH,
-      options: {
-        expiresIn: "7d",
-        issuer: process.env.JWT_ISSUER!,
-        subject: "refresh",
-      },
-      user: { role: user.role },
+    const { accessToken, refreshToken } = generateToken({
+      user: user as IUser,
     });
     SucRes({
       res,
@@ -202,15 +196,7 @@ export const refreshToken = async (
   next: NextFunction
 ): Promise<void> => {
   const user = req.user;
-  const accessToken = signToken({
-    payload: { _id: (user as any)._id },
-    user: { role: user.role },
-  });
-  const refreshToken = signToken({
-    payload: { _id: (user as any)._id },
-    tokenType: TokenType.REFRESH,
-    user: { role: user.role },
-  });
+  const { accessToken, refreshToken } = generateToken({ user: user as IUser });
   SucRes({
     res,
     message: "New Credentials Generated successfully",
@@ -297,33 +283,53 @@ const resetPassword = async (
     provider: providersEnum.SYSTEM,
   });
   if (!user) {
-    return next(new Error("User not found or Email not confirmed", { cause: 401 }));
+    return next(
+      new Error("User not found or Email not confirmed", { cause: 401 })
+    );
   }
   if (!(await compare({ plainText: code, hash: user.forgetPasswordOtp }))) {
     return next(new Error("Invalid code", { cause: 401 }));
   }
 
   // Enforce password history: reject if matches current or any previous
-  const matchesCurrent = await compare({ plainText: password, hash: user.password });
+  const matchesCurrent = await compare({
+    plainText: password,
+    hash: user.password,
+  });
   if (matchesCurrent) {
-    return next(new Error("New password cannot be the same as the current password", { cause: 400 }));
+    return next(
+      new Error("New password cannot be the same as the current password", {
+        cause: 400,
+      })
+    );
   }
   if (Array.isArray(user.passwordHistory)) {
     for (const oldHash of user.passwordHistory) {
       if (await compare({ plainText: password, hash: oldHash })) {
-        return next(new Error("New password cannot match any of your recent passwords", { cause: 400 }));
+        return next(
+          new Error("New password cannot match any of your recent passwords", {
+            cause: 400,
+          })
+        );
       }
     }
   }
 
   const hashedPassword = await hashing({ plainText: password });
   // Build new password history (cap to last 5)
-  const newHistory = [user.password, ...(user.passwordHistory || [])].slice(0, 5);
+  const newHistory = [user.password, ...(user.passwordHistory || [])].slice(
+    0,
+    5
+  );
 
   await UserModel.updateOne(
     { email },
     {
-      $set: { password: hashedPassword, forgetPasswordOtp: undefined, passwordHistory: newHistory },
+      $set: {
+        password: hashedPassword,
+        forgetPasswordOtp: undefined,
+        passwordHistory: newHistory,
+      },
       $inc: { __v: 1 },
     }
   );
@@ -333,4 +339,4 @@ const resetPassword = async (
   });
 };
 
-export { signup, login, loginWithGmail, forgetPassword , resetPassword };
+export { signup, login, loginWithGmail, forgetPassword, resetPassword, logout };

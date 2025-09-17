@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import type { SignOptions } from "jsonwebtoken";
 import { TokenType, UserRoles } from "./enums";
+import { nanoid } from "nanoid";
+import { IUser } from "@db/models/user.model";
 
 export const signToken = ({
   payload = {},
@@ -57,4 +59,29 @@ export const verifyToken = ({
         : process.env.REFRESH_USER_JWT_SECRET!);
 
   return jwt.verify(token, tokenSignature);
+};
+
+export const generateToken = ({
+  user,
+}: {
+  user: IUser;
+}) => {
+  const jwtID = nanoid()
+  const accessToken = signToken({
+    payload: { _id: user._id },
+    options: { expiresIn: "1d", subject: "access", jwtid: jwtID },
+    user: { role: user.role },
+  });
+  const refreshToken = signToken({
+    payload: { _id: user._id },
+    tokenType: TokenType.REFRESH,
+    options: {
+      expiresIn: "7d",
+      issuer: process.env.JWT_ISSUER!,
+      subject: "refresh",
+      jwtid: jwtID,
+    },
+    user: { role: user.role },
+  });
+  return {accessToken,refreshToken};
 };

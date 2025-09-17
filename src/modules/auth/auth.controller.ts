@@ -7,6 +7,7 @@ const authRouter = Router();
 
 authRouter.post("/signup", validate(signUpValidation), authService.signup);
 authRouter.post("/login", validate(loginValidation), authService.login);
+authRouter.post("/logout", authenticationMiddleware, authService.logout);
 authRouter.post("/social-login", authService.loginWithGmail);
 authRouter.post("/refresh-token",authenticationMiddleware, authService.refreshToken);
 authRouter.patch("/confirm-email",authService.confirmEmail);
